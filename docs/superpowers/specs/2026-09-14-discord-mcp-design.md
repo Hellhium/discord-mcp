@@ -192,9 +192,10 @@ before any Discord call.
 | | `discord_send_message` | `content`, `embeds`, `attachments`, `reply_to`, `allow_mentions`. |
 | | `discord_edit_message` | |
 | | `discord_delete_message` | |
-| | `discord_pin_message` | `pinned: true|false`. |
+| | `discord_pin_message` | `pinned: true|false`, on `/channels/{id}/messages/pins/{message.id}`. |
 | | `discord_add_reaction` | Unicode emoji or `name:id`. |
 | | `discord_remove_reaction` | Own reaction, or a given user's. |
+| | `discord_search_messages` | `GET /guilds/{guild.id}/messages/search`: content, channel, author, `limit` ≤ 25, `offset` ≤ 9975; a `202` (guild still being indexed) is reported with its `retry_after`. |
 | Threads | `discord_create_thread` | From a message or standalone. |
 | | `discord_list_active_threads` | Per guild. |
 | Channels | `discord_create_channel` | |
@@ -213,8 +214,8 @@ before any Discord call.
 | DMs | `discord_send_dm` | Opens the DM channel, then sends. |
 | Long tail | `discord_request` | See below. |
 
-Message search is **deferred**: the bot-accessible guild message search endpoint must be verified
-during planning; `discord_request` covers it meanwhile.
+Message search was verified during planning: the endpoint is documented, needs
+`READ_MESSAGE_HISTORY`, and its results are limited by the `MESSAGE_CONTENT` intent.
 
 ### `discord_request`
 
