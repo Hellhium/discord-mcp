@@ -4,14 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project goal
 
-**`discord-mcp`** — an **MCP server that controls a Discord bot**. An MCP client (an LLM) calls
-tools such as reading channels or sending messages, and the server carries them out through a
-Discord bot account.
+**`discord-mcp`** — an **HTTP MCP server that lets an LLM drive Discord** through a bot account
+or a webhook. The design is in `docs/superpowers/specs/2026-09-14-discord-mcp-design.md`; read
+it before changing behavior.
 
-The scope of the tool surface and the permission model are still to be designed. Whatever they
-become, the guiding principle is the one from the reference project: **the operator decides the
-scope in config, and the LLM cannot widen it** — no tool argument may select a different bot,
-token, guild or channel outside what the config allows.
+Guiding principles:
+
+- **Discord is the permission system.** The server adds no guild/channel/action filtering: what
+  the bot's roles (or the webhook) allow is what the LLM can do.
+- **Every action is audited.** Each tool call produces one structured JSON log line on stdout;
+  credentials never appear in logs, tool descriptions or errors.
+- **Full API reach.** Typed tools for common assistant work, plus `discord_request` for the rest
+  of the Discord REST API (always sent to `discord.com/api/v10`, never to a host taken from
+  arguments).
+- **Callers only see what they can use.** Bot, bot+events and webhook callers each get their own
+  tool list; the Discord credential always comes from the current request's principal.
 
 ## `references/` — read-only, gitignored
 
@@ -39,8 +46,8 @@ kept purely as design references. Read them for patterns; never import from them
 - **Layout:** `cmd/server/main.go` is a thin entrypoint; all logic lives in `internal/<pkg>`.
   Keep concerns in distinct packages — config parsing, the Discord client wrapper, the MCP tool
   handlers, HTTP routing/auth — so each can be unit-tested without a live Discord or network.
-- **Config is the source of truth.** A single YAML file (`-config path`) defines the bot token,
-  listen address, client auth and the allowed scope. Parse it once at startup into typed structs,
+- **Config is the source of truth.** A single YAML file (`-config path`) defines the listen address,
+  the instances (client tokens mapped to a bot or a webhook) and direct auth. Parse it once at startup into typed structs,
   validate it, and refuse to start on anything ambiguous. Pass config values (not env vars or
   globals) into constructors. Use `gopkg.in/yaml.v3`. Ship a `config.example.yaml`; never
   commit a real `config.yaml`.
@@ -74,8 +81,9 @@ Claude Code hooks (`.claude/settings.json`) run `gofmt -w` after every edit to a
   and `t.TempDir()` for config files.
 - Fake Discord at the HTTP boundary (`httptest.Server`) rather than mocking deep internals, so
   handlers are tested through the same client code that runs in production.
-- Test the scope invariant adversarially: tool arguments that try to reach a guild/channel outside
-  the configured scope must be rejected with nothing sent to Discord.
+- Test the security boundaries adversarially: credential shape detection and precedence,
+  `discord_request` routes that try to reach another host, and tokens leaking into logs or
+  errors — a rejected input must send nothing to Discord.
 - Config tests cover both valid configs and every validation error.
 
 ## Packaging
