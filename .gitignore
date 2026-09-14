@@ -1,0 +1,11 @@
+# Reference-only clones (not part of this project)
+/references/
+
+# Build output
+/discord-mcp
+
+# Local config (holds the bot token)
+/config.yaml
+
+# Personal Claude Code overrides
+/.claude/settings.local.json
