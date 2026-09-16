@@ -70,3 +70,56 @@ func bucketFor(method, route string, params map[string]string) string {
 	}
 	return method + " " + b
 }
+
+// ValidateRawRoute checks a discord_request route. It must be a plain path
+// relative to APIBase: no scheme, host, authority, query, fragment, backslash,
+// empty segment or dot-dot segment — also when percent-encoded — so the
+// request can only ever reach a path under https://discord.com/api/v10.
+func ValidateRawRoute(route string) error {
+	fail := func(why string) error { return &ArgError{Msg: "invalid route: " + why} }
+	if !strings.HasPrefix(route, "/") {
+		return fail("must start with /")
+	}
+	if strings.HasPrefix(route, "/api/") {
+		return fail("must be relative to /api/v10 (drop the /api/v10 prefix)")
+	}
+	for _, b := range []byte(route) {
+		if b <= ' ' || b == 0x7f {
+			return fail("must not contain spaces or control characters")
+		}
+	}
+	if strings.ContainsAny(route, `\?#`) {
+		return fail(`must not contain \, ? or # (pass query parameters in query)`)
+	}
+	if strings.Contains(route, "://") {
+		return fail("must not contain a URL")
+	}
+	for _, seg := range strings.Split(route[1:], "/") {
+		if seg == "" {
+			return fail("must not contain empty segments")
+		}
+		dec, err := url.PathUnescape(seg)
+		if err != nil {
+			return fail("contains an invalid percent-encoding")
+		}
+		if dec == ".." || dec == "." || strings.ContainsAny(dec, `/\`) {
+			return fail("must not contain dot or encoded slash segments")
+		}
+	}
+	return nil
+}
+
+// RedactRoute turns a concrete path into a loggable template: IDs become {id}
+// and the token segment of webhook and interaction routes becomes {token}.
+func RedactRoute(path string) string {
+	segs := strings.Split(path, "/")
+	for i, s := range segs {
+		switch {
+		case credential.IsSnowflake(s):
+			segs[i] = "{id}"
+		case i >= 2 && (segs[i-2] == "webhooks" || segs[i-2] == "interactions") && segs[i-1] == "{id}":
+			segs[i] = "{token}"
+		}
+	}
+	return strings.Join(segs, "/")
+}
