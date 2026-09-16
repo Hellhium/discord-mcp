@@ -62,14 +62,11 @@ func (c *Client) VerifyWebhook(ctx context.Context, wh credential.Webhook) (Webh
 	return WebhookInfo{ID: w.ID, Name: w.Name, ChannelID: w.ChannelID, GuildID: w.GuildID}, nil
 }
 
-// privilegedMask is every intent MissingPrivileged knows about.
-const privilegedMask = intents.Mask(1<<1 | 1<<8 | 1<<15)
-
 // CheckPrivilegedIntents fails, naming the intents, when m requests a
 // privileged intent that is not enabled for the application. It calls
 // Discord only when m contains a privileged intent.
 func (c *Client) CheckPrivilegedIntents(ctx context.Context, m intents.Mask) error {
-	if m&privilegedMask == 0 {
+	if m&intents.Privileged == 0 {
 		return nil
 	}
 	resp, err := c.Do(ctx, Call{Method: "GET", Route: "/applications/@me"})

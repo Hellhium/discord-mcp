@@ -51,12 +51,15 @@ func TestValidateRawRoute(t *testing.T) {
 
 func TestRedactRoute(t *testing.T) {
 	tests := map[string]string{
-		"/users/@me":                            "/users/@me",
-		"/channels/123/messages/456":            "/channels/{id}/messages/{id}",
-		"/webhooks/123/SeCrEt_token":            "/webhooks/{id}/{token}",
-		"/webhooks/123/SeCrEt_token/messages/9": "/webhooks/{id}/{token}/messages/{id}",
-		"/interactions/123/tok/callback":        "/interactions/{id}/{token}/callback",
-		"/webhooks/123":                         "/webhooks/{id}",
+		"/users/@me":                                      "/users/@me",
+		"/channels/123/messages/456":                      "/channels/{id}/messages/{id}",
+		"/webhooks/123/SeCrEt_token":                      "/webhooks/{id}/{token}",
+		"/webhooks/123/SeCrEt_token/messages/9":           "/webhooks/{id}/{token}/messages/{id}",
+		"/interactions/123/tok/callback":                  "/interactions/{id}/{token}/callback",
+		"/webhooks/123":                                   "/webhooks/{id}",
+		"/Webhooks/123/SeCrEt_token":                      "/Webhooks/{id}/{token}",
+		"/INTERACTIONS/123/tok/callback":                  "/INTERACTIONS/{id}/{token}/callback",
+		"/Webhooks/987654321098765432/SECRETWEBHOOKTOKEN": "/Webhooks/{id}/{token}",
 	}
 	for in, want := range tests {
 		if got := RedactRoute(in); got != want {
@@ -100,5 +103,29 @@ func TestDoRawRejectsBeforeSending(t *testing.T) {
 	}
 	if n := len(fake.Requests()); n != 0 {
 		t.Fatalf("%d request(s) reached Discord", n)
+	}
+}
+
+func TestDoRawMixedCaseWebhookRedaction(t *testing.T) {
+	fake := discordtest.New(t)
+	fake.Handle("POST /api/v10/Webhooks/{id}/{token}", discordtest.JSON(204, map[string]any{}))
+	c := newBot(t, fake, time.Second)
+	rec := NewRecorder()
+	_, err := c.DoRaw(WithRecorder(context.Background(), rec), "POST", "/Webhooks/987654321098765432/SECRETWEBHOOKTOKEN",
+		nil, map[string]any{"content": "test"}, "")
+	if err != nil {
+		t.Fatalf("DoRaw failed: %v", err)
+	}
+	calls := rec.Calls()
+	if len(calls) != 1 {
+		t.Fatalf("expected 1 recorded call, got %d", len(calls))
+	}
+	recorded := calls[0].Route
+	// The recorded route should have no plaintext ID or token
+	if recorded != "/Webhooks/{id}/{token}" {
+		t.Errorf("recorded route = %q, want /Webhooks/{id}/{token}", recorded)
+	}
+	if u := recorded; u != "/Webhooks/{id}/{token}" {
+		t.Errorf("recorded route %q contains secrets or wrong format", u)
 	}
 }

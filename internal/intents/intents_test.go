@@ -23,6 +23,23 @@ func TestParseUnknown(t *testing.T) {
 	}
 }
 
+func TestPrivilegedMask(t *testing.T) {
+	// Privileged must be the OR of all privileged intents, so there is one source of truth.
+	var computed Mask
+	for _, p := range []struct {
+		intent Mask
+	}{
+		{1 << 1},  // guild_members
+		{1 << 8},  // guild_presences
+		{1 << 15}, // message_content
+	} {
+		computed |= p.intent
+	}
+	if Privileged != computed {
+		t.Errorf("Privileged = %b, want %b", Privileged, computed)
+	}
+}
+
 func TestMissingPrivileged(t *testing.T) {
 	all := Mask(1<<1 | 1<<8 | 1<<15 | 1<<9)
 	tests := []struct {

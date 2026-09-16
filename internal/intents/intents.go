@@ -60,6 +60,15 @@ var privileged = []struct {
 	{"message_content", 1 << 15, 1<<18 | 1<<19},
 }
 
+// Privileged is the bitmask of all privileged gateway intents.
+var Privileged Mask
+
+func init() {
+	for _, p := range privileged {
+		Privileged |= p.intent
+	}
+}
+
 // MissingPrivileged returns the privileged intents requested in m that the
 // application flags do not enable, or nil when there are none. Opening a
 // Gateway with such an intent fails with close code 4014; checking first lets

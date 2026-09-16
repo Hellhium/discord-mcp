@@ -117,7 +117,7 @@ func RedactRoute(path string) string {
 		switch {
 		case credential.IsSnowflake(s):
 			segs[i] = "{id}"
-		case i >= 2 && (segs[i-2] == "webhooks" || segs[i-2] == "interactions") && segs[i-1] == "{id}":
+		case i >= 2 && (strings.EqualFold(segs[i-2], "webhooks") || strings.EqualFold(segs[i-2], "interactions")) && segs[i-1] == "{id}":
 			segs[i] = "{token}"
 		}
 	}
