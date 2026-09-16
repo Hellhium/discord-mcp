@@ -5,6 +5,7 @@ func BotTools() []Tool {
 	var out []Tool
 	out = append(out, discoveryTools()...)
 	out = append(out, messageTools()...)
+	out = append(out, channelTools()...)
 	return out
 }
 
