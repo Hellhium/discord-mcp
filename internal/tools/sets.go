@@ -3,6 +3,7 @@ package tools
 // BotTools are the tools for principals with a bot credential.
 func BotTools() []Tool {
 	var out []Tool
+	out = append(out, discoveryTools()...)
 	return out
 }
 
