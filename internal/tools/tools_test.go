@@ -76,6 +76,29 @@ func TestWrapRecordsDiscordCalls(t *testing.T) {
 	}
 }
 
+func TestWrapAuditsArgumentsAsSent(t *testing.T) {
+	h := newHarness(t, auth.CapBot)
+	h.call(fakeTool(func(_ context.Context, _ *auth.Principal, a Args) (string, error) {
+		// A handler rewriting its own arguments must not change what gets
+		// audited: the log records what the caller asked for.
+		a["content"] = "REWRITTEN"
+		delete(a, "channel_id")
+		a["extra"] = "added by handler"
+		return "done", nil
+	}), map[string]any{"channel_id": "7", "content": "hi"})
+	a := h.lastAudit()
+	if !reflect.DeepEqual(a["targets"], map[string]any{"channel_id": "7"}) {
+		t.Fatalf("targets = %v, want the original channel_id", a["targets"])
+	}
+	args := a["args"].(map[string]any)
+	if args["content"] != "hi" {
+		t.Fatalf("args.content = %v, want the original value", args["content"])
+	}
+	if _, ok := args["extra"]; ok {
+		t.Fatalf("args = %v, must not contain a key the handler added", args)
+	}
+}
+
 func TestWrapWithoutPrincipalRefuses(t *testing.T) {
 	var called bool
 	tool := fakeTool(func(context.Context, *auth.Principal, Args) (string, error) { called = true; return "", nil })
@@ -175,10 +198,11 @@ func TestMessagePayload(t *testing.T) {
 	}
 
 	for name, args := range map[string]Args{
-		"nothing to send":  {},
-		"bad base64":       {"content": "x", "attachments": []any{map[string]any{"filename": "a", "content_base64": "!!"}}},
-		"path in filename": {"content": "x", "attachments": []any{map[string]any{"filename": "../a", "content_base64": data}}},
-		"too many embeds":  {"embeds": make([]any, 11)},
+		"nothing to send":        {},
+		"bad base64":             {"content": "x", "attachments": []any{map[string]any{"filename": "a", "content_base64": "!!"}}},
+		"path in filename":       {"content": "x", "attachments": []any{map[string]any{"filename": "../a", "content_base64": data}}},
+		"too many embeds":        {"embeds": make([]any, 11)},
+		"missing content_base64": {"content": "x", "attachments": []any{map[string]any{"filename": "a.txt"}}},
 	} {
 		if _, _, err := messagePayload(args, true, true); err == nil {
 			t.Errorf("%s: want error", name)

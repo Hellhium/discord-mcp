@@ -158,7 +158,10 @@ func attachments(a Args) ([]discord.File, []map[string]any, error) {
 		if name == "" || strings.ContainsAny(name, `/\`) {
 			return nil, nil, argErr("attachments[%d].filename must be a plain file name", i)
 		}
-		b64, _ := m["content_base64"].(string)
+		b64, isStr := m["content_base64"].(string)
+		if !isStr || b64 == "" {
+			return nil, nil, argErr("attachments[%d].content_base64 is required", i)
+		}
 		data, err := base64.StdEncoding.DecodeString(b64)
 		if err != nil {
 			return nil, nil, argErr("attachments[%d].content_base64 is not valid base64", i)

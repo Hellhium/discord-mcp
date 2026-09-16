@@ -50,6 +50,12 @@ func wrap(name string, h Handler, log *audit.Logger) server.ToolHandlerFunc {
 		if args == nil {
 			args = Args{}
 		}
+		// Snapshot what was asked for before the handler runs: Args is a
+		// plain map, and a handler is free to add, delete or rewrite keys
+		// for its own convenience. Auditing the post-call map would then log
+		// what the handler did to its arguments, not what the caller sent.
+		targets := audit.Targets(args)
+		sanitized := audit.SanitizeArgs(args)
 		rec := discord.NewRecorder()
 		text, err := h(discord.WithRecorder(ctx, rec), p, args)
 		outcome, msg := classify(err)
@@ -61,8 +67,8 @@ func wrap(name string, h Handler, log *audit.Logger) server.ToolHandlerFunc {
 			Tool:     name,
 			Outcome:  outcome,
 			Duration: time.Since(start),
-			Targets:  audit.Targets(args),
-			Args:     audit.SanitizeArgs(args),
+			Targets:  targets,
+			Args:     sanitized,
 			Calls:    rec.Calls(),
 			Error:    msg,
 		})
