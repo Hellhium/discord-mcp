@@ -186,3 +186,34 @@ func TestNewBufferBootIDsDiffer(t *testing.T) {
 		t.Fatal("two buffers share a boot id")
 	}
 }
+
+func TestGuildCreateExtractsGuildID(t *testing.T) {
+	b := newBuffer(10, "boot")
+	g := b.Append("GUILD_CREATE", json.RawMessage(`{"id":"9","name":"x"}`))
+	if g.GuildID != "9" || g.ChannelID != "" {
+		t.Fatalf("guild event = %+v (want GuildID=9, ChannelID=)", g)
+	}
+}
+
+func TestGuildMemberAddExtractsGuildID(t *testing.T) {
+	b := newBuffer(10, "boot")
+	m := b.Append("GUILD_MEMBER_ADD", json.RawMessage(`{"guild_id":"9","user":{"id":"7"}}`))
+	if m.GuildID != "9" {
+		t.Fatalf("member event = %+v (want GuildID=9)", m)
+	}
+}
+
+func TestFilterByGuildID(t *testing.T) {
+	b := newBuffer(10, "boot")
+	b.Append("GUILD_CREATE", json.RawMessage(`{"id":"9","name":"x"}`))
+	b.Append("MESSAGE_CREATE", msg("5", "7")) // guild_id="9"
+	b.Append("GUILD_CREATE", json.RawMessage(`{"id":"10","name":"y"}`))
+
+	p, err := b.Since("boot:0", Filter{GuildID: "9"}, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(seqs(p.Events)) != "[1 2]" {
+		t.Fatalf("filtered events = %v (want [1 2])", seqs(p.Events))
+	}
+}

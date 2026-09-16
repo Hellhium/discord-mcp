@@ -243,7 +243,9 @@ func (b *Buffer) Close() {
 type eventIDs struct{ guild, channel, author string }
 
 // extractIDs reads the IDs the filters use. Message events carry author.id,
-// reaction events user_id, and channel/thread events their own id.
+// reaction events user_id, and channel/thread events their own id. Guild
+// dispatches (GUILD_CREATE, GUILD_UPDATE, GUILD_DELETE) are the guild object
+// itself, so their own id is the guild id.
 func extractIDs(typ string, data json.RawMessage) eventIDs {
 	var v struct {
 		ID        string `json:"id"`
@@ -261,6 +263,9 @@ func extractIDs(typ string, data json.RawMessage) eventIDs {
 	}
 	if ids.channel == "" && (strings.HasPrefix(typ, "CHANNEL_") || strings.HasPrefix(typ, "THREAD_")) {
 		ids.channel = v.ID
+	}
+	if ids.guild == "" && strings.HasPrefix(typ, "GUILD_") {
+		ids.guild = v.ID
 	}
 	return ids
 }

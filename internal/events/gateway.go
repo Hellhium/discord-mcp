@@ -31,8 +31,9 @@ type Gateway struct {
 	ready         chan struct{}
 }
 
-// NewGateway prepares a session with the given intents. Nothing connects until
-// Start.
+// NewGateway prepares a session: sets the given intents, disables its state
+// cache, and registers permanent event and disconnect handlers. Nothing
+// connects until Start.
 func NewGateway(instance string, session *discordgo.Session, mask intents.Mask, buf *Buffer, log *audit.Logger) *Gateway {
 	session.Identify.Intents = discordgo.Intent(mask)
 	session.StateEnabled = false
