@@ -7,6 +7,7 @@ func BotTools() []Tool {
 	out = append(out, messageTools()...)
 	out = append(out, channelTools()...)
 	out = append(out, memberTools()...)
+	out = append(out, requestTool())
 	return out
 }
 
