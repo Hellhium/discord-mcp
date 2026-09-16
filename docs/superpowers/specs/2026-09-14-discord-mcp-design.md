@@ -166,8 +166,12 @@ before any Discord call.
 
 - **`format: text|json`** on read tools. `text` (default) is compact for the LLM, e.g.
   `[2026-09-14 11:02] alice (1234…): message`; `json` returns Discord's object as-is.
-- **`reason`** (optional) on every mutating tool, sent as `X-Audit-Log-Reason` (URL-encoded) so
-  the action appears in Discord's own audit log.
+- **`reason`** (optional) on every mutating tool whose endpoint Discord actually audits — deletes,
+  pins, channel and thread changes, role changes, moderation, and `discord_request` — sent as
+  `X-Audit-Log-Reason` (URL-encoded) so the action appears in Discord's own audit log. Sending a
+  message, editing one, reacting and the webhook tools take no `reason`: Discord writes no audit
+  entry for those, so the header would be silently discarded. This server's own audit log records
+  every one of them regardless.
 - **MCP annotations:** `readOnlyHint` on read tools, `destructiveHint` on delete, kick, ban,
   remove-role, timeout, and on `discord_request` (which may mutate).
 - **`allow_mentions`** (boolean, default `true`) on `send_message`, `send_dm`, `edit_message`,
