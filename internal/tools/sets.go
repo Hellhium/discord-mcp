@@ -13,8 +13,7 @@ func BotTools() []Tool {
 
 // EventTools are added for configured bots with events.
 func EventTools() []Tool {
-	var out []Tool
-	return out
+	return []Tool{pollEventsTool(), waitForMessageTool()}
 }
 
 // WebhookTools are the only tools a webhook principal gets.
