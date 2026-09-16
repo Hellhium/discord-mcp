@@ -347,8 +347,9 @@ As in `CLAUDE.md` and the reference:
 - `Makefile` (`build`, `test`, `vet`, `fmt`, `fmt-check`, `tidy`, `run`, `clean`), binary
   `discord-mcp`.
 - Multi-stage `Dockerfile`: static `CGO_ENABLED=0` build on `$BUILDPLATFORM`, Alpine runtime with
-  `ca-certificates`, `USER 65532:65532`, `HEALTHCHECK` on `/healthz`, config mounted read-only at
-  `/etc/discord-mcp/config.yaml`, `version` via `-ldflags`.
+  `ca-certificates`, no `USER` directive (the uid is a deployment decision, not an image one),
+  `HEALTHCHECK` on `/healthz`, config mounted read-only at `/etc/discord-mcp/config.yaml`,
+  `version` via `-ldflags`.
 - GitHub Actions: multi-arch image to GHCR; pull requests build amd64 only and run a smoke test
   (missing `-config` fails; `config.example.yaml` with `-verify-credentials=false` answers
   `/healthz`).

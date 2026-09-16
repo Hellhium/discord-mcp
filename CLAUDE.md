@@ -89,9 +89,10 @@ Claude Code hooks (`.claude/settings.json`) run `gofmt -w` after every edit to a
 ## Packaging
 
 Mirror the reference: a multi-stage `Dockerfile` (static `CGO_ENABLED=0` build on
-`$BUILDPLATFORM`, Alpine runtime, numeric non-root `USER 65532:65532`, `HEALTHCHECK` on
-`/healthz`, config mounted read-only), and a GitHub Actions workflow building multi-arch images
-to GHCR with a smoke test on pull requests.
+`$BUILDPLATFORM`, Alpine runtime, no `USER` directive — the uid is chosen at run time by
+`docker run --user` or a Kubernetes `securityContext`, `HEALTHCHECK` on `/healthz`, config
+mounted read-only), and a GitHub Actions workflow building multi-arch images to GHCR with a
+smoke test on pull requests.
 
 ## Git commits
 
