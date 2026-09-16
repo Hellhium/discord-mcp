@@ -4,6 +4,7 @@ package tools
 func BotTools() []Tool {
 	var out []Tool
 	out = append(out, discoveryTools()...)
+	out = append(out, messageTools()...)
 	return out
 }
 
