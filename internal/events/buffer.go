@@ -242,10 +242,11 @@ func (b *Buffer) Close() {
 
 type eventIDs struct{ guild, channel, author string }
 
-// extractIDs reads the IDs the filters use. Message events carry author.id,
-// reaction events user_id, and channel/thread events their own id. Guild
-// dispatches (GUILD_CREATE, GUILD_UPDATE, GUILD_DELETE) are the guild object
-// itself, so their own id is the guild id.
+// extractIDs reads the IDs the filters use. Author ID comes from three
+// sources with precedence: message author.id, then reaction user_id, then
+// member user.id. Channel/thread events use their own id. Guild dispatches
+// (GUILD_CREATE, GUILD_UPDATE, GUILD_DELETE) are the guild object itself,
+// so their own id is the guild id.
 func extractIDs(typ string, data json.RawMessage) eventIDs {
 	var v struct {
 		ID        string `json:"id"`
@@ -255,11 +256,22 @@ func extractIDs(typ string, data json.RawMessage) eventIDs {
 		Author    *struct {
 			ID string `json:"id"`
 		} `json:"author"`
+		User *struct {
+			ID string `json:"id"`
+		} `json:"user"`
 	}
 	_ = json.Unmarshal(data, &v)
-	ids := eventIDs{guild: v.GuildID, channel: v.ChannelID, author: v.UserID}
+	ids := eventIDs{guild: v.GuildID, channel: v.ChannelID}
+	// Resolve author ID in precedence: message author, then reaction user_id,
+	// then member user.id.
 	if v.Author != nil {
 		ids.author = v.Author.ID
+	}
+	if ids.author == "" {
+		ids.author = v.UserID
+	}
+	if ids.author == "" && v.User != nil {
+		ids.author = v.User.ID
 	}
 	if ids.channel == "" && (strings.HasPrefix(typ, "CHANNEL_") || strings.HasPrefix(typ, "THREAD_")) {
 		ids.channel = v.ID

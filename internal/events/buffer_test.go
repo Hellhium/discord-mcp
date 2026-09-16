@@ -195,11 +195,20 @@ func TestGuildCreateExtractsGuildID(t *testing.T) {
 	}
 }
 
-func TestGuildMemberAddExtractsGuildID(t *testing.T) {
+func TestGuildMemberAddExtractsGuildAndAuthorID(t *testing.T) {
 	b := newBuffer(10, "boot")
 	m := b.Append("GUILD_MEMBER_ADD", json.RawMessage(`{"guild_id":"9","user":{"id":"7"}}`))
-	if m.GuildID != "9" {
-		t.Fatalf("member event = %+v (want GuildID=9)", m)
+	if m.GuildID != "9" || m.AuthorID != "7" {
+		t.Fatalf("member event = %+v (want GuildID=9, AuthorID=7)", m)
+	}
+}
+
+func TestAuthorIDPrecedence(t *testing.T) {
+	b := newBuffer(10, "boot")
+	// MESSAGE_CREATE with both author.id and user.id should use author.id
+	m := b.Append("MESSAGE_CREATE", json.RawMessage(`{"guild_id":"9","channel_id":"5","author":{"id":"msg_author"},"user":{"id":"ignored"}}`))
+	if m.AuthorID != "msg_author" {
+		t.Fatalf("message with both author and user = %+v (want AuthorID=msg_author)", m)
 	}
 }
 
