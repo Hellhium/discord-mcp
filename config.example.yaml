@@ -1,0 +1,33 @@
+# discord-mcp example configuration.
+# Treat the real file as a secret (chmod 600) and keep it out of git and images.
+
+server:
+  listen: ":8080"
+
+# Accept a Discord bot token or webhook directly in place of a token below.
+direct_auth:
+  enabled: false
+  cache_ttl: 10m
+
+discord:
+  timeout: 15s
+
+instances:
+  # A bot with live events. Generate client tokens with:
+  #   openssl rand -base64 32 | tr -d '=+/'
+  - name: assistant
+    auth:
+      tokens: ["REPLACE-WITH-A-GENERATED-TOKEN-1"]
+    bot:
+      token: "REPLACE.WITH.YOUR-DISCORD-BOT-TOKEN"
+      events:
+        # message_content is privileged: enable it in the Developer Portal.
+        intents: [guilds, guild_messages, guild_message_reactions, direct_messages, message_content]
+        buffer_size: 1000
+
+  # A webhook: its callers only get webhook tools.
+  - name: alerts
+    auth:
+      tokens: ["REPLACE-WITH-A-GENERATED-TOKEN-2"]
+    webhook:
+      url: "https://discord.com/api/webhooks/123456789012345678/REPLACE_WITH_WEBHOOK_TOKEN"
