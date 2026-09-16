@@ -18,6 +18,5 @@ func EventTools() []Tool {
 
 // WebhookTools are the only tools a webhook principal gets.
 func WebhookTools() []Tool {
-	var out []Tool
-	return out
+	return []Tool{webhookGetTool(), webhookSendTool(), webhookGetMessageTool(), webhookEditMessageTool(), webhookDeleteMessageTool()}
 }
