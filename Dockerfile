@@ -26,13 +26,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 # ca-certificates for https://discord.com.
 FROM alpine:3.24
 
-RUN apk add --no-cache ca-certificates \
-    && adduser -D -H -u 65532 nonroot
+RUN apk add --no-cache ca-certificates
 
 COPY --from=build /out/discord-mcp /usr/local/bin/discord-mcp
-
-# Numeric, never the name: Kubernetes runAsNonRoot cannot verify a named user.
-USER 65532:65532
 
 # Mount the config read-only:
 #   docker run -v ./config.yaml:/etc/discord-mcp/config.yaml:ro ...
