@@ -203,8 +203,19 @@ func renderChannelTree(chs []channelJSON) string {
 		}
 		delete(children, cat.ID)
 	}
-	// Children whose category was not returned.
-	for _, kids := range children {
+	// Emit children whose parent category was not in the response.
+	// Discord can return channels with parent_id referring to a deleted,
+	// private, or otherwise inaccessible category. Collect remaining
+	// parent IDs, sort them for deterministic output, then emit each
+	// group's children in position order.
+	var orphanParents []string
+	for parentID := range children {
+		orphanParents = append(orphanParents, parentID)
+	}
+	slices.Sort(orphanParents)
+	for _, parentID := range orphanParents {
+		kids := children[parentID]
+		slices.SortFunc(kids, byPos)
 		for _, k := range kids {
 			lines = append(lines, renderChannel(k))
 		}

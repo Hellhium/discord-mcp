@@ -101,3 +101,34 @@ func TestGetChannel(t *testing.T) {
 		t.Fatalf("text=%q isErr=%v", text, isErr)
 	}
 }
+
+func TestListChannelsWithOrphanChildren(t *testing.T) {
+	h := newHarness(t, auth.CapBot)
+	// Response contains channels whose parent_id refers to categories NOT in
+	// the response. Two orphan groups with children given out of position order
+	// ensure both sorting and stable parent iteration are working.
+	h.handle("GET /api/v10/guilds/{id}/channels", discordtest.JSON(200, []map[string]any{
+		// Present category
+		{"id": "100", "type": 4, "name": "Visible", "position": 0},
+		{"id": "101", "type": 0, "name": "visible-child", "parent_id": "100", "position": 0},
+		// Orphan group 1 (absent parent "200"): two children out of order
+		{"id": "201", "type": 0, "name": "orphan-1-second", "parent_id": "200", "position": 1},
+		{"id": "200", "type": 0, "name": "orphan-1-first", "parent_id": "200", "position": 0},
+		// Orphan group 2 (absent parent "300"): two children out of order
+		{"id": "302", "type": 0, "name": "orphan-2-second", "parent_id": "300", "position": 1},
+		{"id": "301", "type": 0, "name": "orphan-2-first", "parent_id": "300", "position": 0},
+	}))
+	text, isErr := h.call(listChannelsTool(), map[string]any{"guild_id": "1"})
+	if isErr {
+		t.Fatal(text)
+	}
+	want := "Visible (100) category\n" +
+		"  #visible-child (101) text parent=100\n" +
+		"#orphan-1-first (200) text parent=200\n" +
+		"#orphan-1-second (201) text parent=200\n" +
+		"#orphan-2-first (301) text parent=300\n" +
+		"#orphan-2-second (302) text parent=300"
+	if text != want {
+		t.Fatalf("text:\n%s\nwant:\n%s", text, want)
+	}
+}
